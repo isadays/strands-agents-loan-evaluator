@@ -134,8 +134,28 @@ for file_path in required_files:
         print(f"❌ {file_path}: NOT FOUND")
         sys.exit(1)
 
-# Test 7: Test EvaluationResult creation
-print("\n[TEST 7] Creating evaluation result object...")
+# Test 7: Verify LangSmith tracing configuration guard
+print("\n[TEST 7] Checking LangSmith tracing configuration...")
+try:
+    import os
+    from unittest.mock import patch
+
+    from loan_evaluator.loan_evaluator import LoanEvaluator
+
+    with patch.dict(os.environ, {}, clear=True):
+        try:
+            LoanEvaluator(use_langsmith=True)
+            raise AssertionError("Expected missing LANGSMITH_API_KEY error")
+        except RuntimeError as e:
+            assert "LANGSMITH_API_KEY" in str(e)
+
+    print("✅ Missing LangSmith API key fails fast")
+except Exception as e:
+    print(f"❌ LangSmith configuration check failed: {e}")
+    sys.exit(1)
+
+# Test 8: Test EvaluationResult creation
+print("\n[TEST 8] Creating evaluation result object...")
 try:
     with open(project_root / "loan_evaluator" / "sample_data" / "loan_application_1.json") as f:
         app_data = json.load(f)
@@ -162,8 +182,8 @@ except Exception as e:
     print(f"❌ Evaluation result creation failed: {e}")
     sys.exit(1)
 
-# Test 8: JSON serialization
-print("\n[TEST 8] Testing JSON serialization...")
+# Test 9: JSON serialization
+print("\n[TEST 9] Testing JSON serialization...")
 try:
     json_str = result.model_dump_json(indent=2)
     json_data = json.loads(json_str)
@@ -172,8 +192,8 @@ except Exception as e:
     print(f"❌ Serialization failed: {e}")
     sys.exit(1)
 
-# Test 9: Calculate metrics
-print("\n[TEST 9] Testing financial calculations...")
+# Test 10: Calculate metrics
+print("\n[TEST 10] Testing financial calculations...")
 try:
     dti = (app.existing_debt * 12 / app.annual_income) if app.annual_income else 0
     ltv = (app.requested_amount / app.collateral_value * 100) if app.collateral_value else 0

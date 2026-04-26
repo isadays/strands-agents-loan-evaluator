@@ -77,6 +77,9 @@ class LoanEvaluator:
 
         self.use_langsmith = use_langsmith
         self.langsmith_project = os.getenv("LANGSMITH_PROJECT", "strands-agents-loan")
+        self.langsmith_client = None
+        if self.use_langsmith:
+            self.langsmith_client = self._initialize_langsmith_client()
 
         self.prompts = self._load_prompts()
         self.evaluators = self._initialize_agents()
@@ -85,6 +88,22 @@ class LoanEvaluator:
     def _normalize_bedrock_model_id(model_name: str) -> str:
         """Convert common Claude API model names to Bedrock model/profile IDs."""
         return BEDROCK_MODEL_ALIASES.get(model_name, model_name)
+
+    def _initialize_langsmith_client(self):
+        """Create a LangSmith client and fail fast on missing tracing config."""
+        if not os.getenv("LANGSMITH_API_KEY"):
+            raise RuntimeError(
+                "LANGSMITH_API_KEY is required when use_langsmith=True."
+            )
+
+        os.environ.setdefault("LANGSMITH_TRACING", "true")
+
+        from langsmith import Client
+
+        return Client(
+            api_key=os.getenv("LANGSMITH_API_KEY"),
+            api_url=os.getenv("LANGSMITH_ENDPOINT"),
+        )
 
     def _load_prompts(self) -> Dict[str, str]:
         """Load prompt templates for each agent."""
@@ -348,13 +367,30 @@ The JSON object must include "recommended_action" with one of:
         Use this method from notebooks and other async environments.
         """
         if self.use_langsmith:
-            from langsmith import tracing_context
+            from langsmith import traceable, tracing_context
+
+            @traceable(
+                run_type="chain",
+                name="loan-evaluation",
+                metadata={
+                    "ls_provider": "aws-bedrock",
+                    "ls_model_name": self.model.config.get("model_id"),
+                },
+            )
+            async def run_with_trace(
+                loan_application: LoanApplication,
+            ) -> EvaluationResult:
+                return await self._evaluate_async_impl(loan_application)
 
             with tracing_context(
                 enabled=True,
                 project_name=self.langsmith_project,
+                client=self.langsmith_client,
             ):
-                return await self._evaluate_async_impl(application)
+                result = await run_with_trace(application)
+
+            self._flush_langsmith()
+            return result
 
         return await self._evaluate_async_impl(application)
 
@@ -412,19 +448,12 @@ The JSON object must include "recommended_action" with one of:
             application, reviews, loan_officer_review
         )
 
-        if self.use_langsmith:
-            self._flush_langsmith()
-
         return evaluation
 
     def _flush_langsmith(self) -> None:
         """Flush LangSmith background tracing when the installed SDK supports it."""
-        try:
-            from langsmith.run_helpers import wait_for_all_tracers
-        except ImportError:
-            return
-
-        wait_for_all_tracers()
+        if self.langsmith_client and hasattr(self.langsmith_client, "flush"):
+            self.langsmith_client.flush()
 
     def _run_agent_sync(
         self, agent: Agent, prompt_text: str, reviewer_type: str
