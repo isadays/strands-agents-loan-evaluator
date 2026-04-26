@@ -290,6 +290,87 @@ The JSON object must include "recommended_action" with one of:
 
         return normalized
 
+    @staticmethod
+    def _application_trace_summary(application: LoanApplication) -> Dict[str, Any]:
+        """Create a redacted application summary for LangSmith."""
+        return {
+            "loan_purpose": application.loan_purpose,
+            "loan_term_months": application.loan_term_months,
+            "employment_status": application.employment_status,
+            "documents_count": len(application.documents_provided),
+            "has_collateral": application.collateral_value is not None,
+            "has_secondary_income": bool(application.secondary_income),
+            "has_bankruptcy_history": bool(application.bankruptcy_history),
+        }
+
+    @staticmethod
+    def _review_trace_summary(review: ReviewResult) -> Dict[str, Any]:
+        """Create a redacted review summary for LangSmith."""
+        return {
+            "reviewer_name": review.reviewer_name,
+            "score": review.score,
+            "recommended_action": review.recommended_action,
+            "confidence": review.confidence,
+            "fraud_risk_level": review.fraud_risk_level,
+            "documentation_status": review.documentation_status,
+        }
+
+    @classmethod
+    def _evaluation_trace_summary(
+        cls, evaluation: EvaluationResult
+    ) -> Dict[str, Any]:
+        """Create a redacted top-level evaluation output for LangSmith."""
+        return {
+            "final_recommendation": evaluation.final_recommendation,
+            "overall_score": evaluation.overall_score,
+            "avg_confidence": evaluation.avg_confidence,
+            "agents_involved": evaluation.agents_involved,
+            "review_count": len(evaluation.reviews),
+            "reviews": [
+                cls._review_trace_summary(review)
+                for review in evaluation.reviews
+            ],
+        }
+
+    @classmethod
+    def _agent_output_trace_payload(cls, output: object) -> Dict[str, Any]:
+        """Create a redacted agent output payload for LangSmith."""
+        raw_output = str(output)
+        payload: Dict[str, Any] = {
+            "raw_output_redacted": True,
+        }
+
+        try:
+            json_str = raw_output
+            if "```json" in json_str:
+                json_str = json_str.split("```json")[1].split("```")[0]
+            elif "```" in json_str:
+                json_str = json_str.split("```")[1].split("```")[0]
+
+            parsed = json.loads(json_str)
+            if isinstance(parsed, dict):
+                normalized = cls._normalize_review_json(
+                    parsed,
+                    str(parsed.get("reviewer_name", "unknown")),
+                )
+                payload["summary"] = {
+                    key: normalized.get(key)
+                    for key in (
+                        "reviewer_name",
+                        "score",
+                        "recommended_action",
+                        "confidence",
+                        "fraud_risk_level",
+                        "documentation_status",
+                    )
+                    if normalized.get(key) is not None
+                }
+                payload["parse_status"] = "parsed"
+        except (json.JSONDecodeError, ValueError):
+            payload["parse_status"] = "raw_output_not_json"
+
+        return payload
+
     async def _invoke_agent(
         self, agent: Agent, prompt: str, reviewer_type: str
     ) -> object:
@@ -303,25 +384,13 @@ The JSON object must include "recommended_action" with one of:
 
         def process_inputs(inputs: Dict[str, Any]) -> Dict[str, Any]:
             return {
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": inputs["prompt_text"],
-                    }
-                ]
+                "reviewer_type": reviewer_type,
+                "prompt_redacted": True,
+                "prompt_length": len(inputs["prompt_text"]),
             }
 
         def process_outputs(output: object) -> Dict[str, Any]:
-            return {
-                "choices": [
-                    {
-                        "message": {
-                            "role": "assistant",
-                            "content": str(output),
-                        }
-                    }
-                ]
-            }
+            return self._agent_output_trace_payload(output)
 
         @traceable(
             run_type="llm",
@@ -369,6 +438,16 @@ The JSON object must include "recommended_action" with one of:
         if self.use_langsmith:
             from langsmith import traceable, tracing_context
 
+            def process_inputs(inputs: Dict[str, Any]) -> Dict[str, Any]:
+                return {
+                    "loan_application": self._application_trace_summary(
+                        inputs["loan_application"]
+                    )
+                }
+
+            def process_outputs(output: EvaluationResult) -> Dict[str, Any]:
+                return self._evaluation_trace_summary(output)
+
             @traceable(
                 run_type="chain",
                 name="loan-evaluation",
@@ -376,6 +455,8 @@ The JSON object must include "recommended_action" with one of:
                     "ls_provider": "aws-bedrock",
                     "ls_model_name": self.model.config.get("model_id"),
                 },
+                process_inputs=process_inputs,
+                process_outputs=process_outputs,
             )
             async def run_with_trace(
                 loan_application: LoanApplication,

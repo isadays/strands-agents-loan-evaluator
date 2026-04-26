@@ -154,8 +154,30 @@ except Exception as e:
     print(f"❌ LangSmith configuration check failed: {e}")
     sys.exit(1)
 
-# Test 8: Test EvaluationResult creation
-print("\n[TEST 8] Creating evaluation result object...")
+# Test 8: Verify redacted LangSmith trace payloads
+print("\n[TEST 8] Checking redacted LangSmith trace payloads...")
+try:
+    from loan_evaluator.loan_evaluator import LoanEvaluator
+
+    trace_input = LoanEvaluator._application_trace_summary(app)
+    assert "applicant_name" not in trace_input
+    assert "annual_income" not in trace_input
+    assert "loan_purpose" in trace_input
+
+    trace_agent_output = LoanEvaluator._agent_output_trace_payload(
+        review.model_dump_json()
+    )
+    assert trace_agent_output["raw_output_redacted"] is True
+    assert "raw_output" not in trace_agent_output
+    assert trace_agent_output["summary"]["recommended_action"] == review.recommended_action
+
+    print("✅ Trace payloads are redacted and summarized")
+except Exception as e:
+    print(f"❌ Trace payload check failed: {e}")
+    sys.exit(1)
+
+# Test 9: Test EvaluationResult creation
+print("\n[TEST 9] Creating evaluation result object...")
 try:
     with open(project_root / "loan_evaluator" / "sample_data" / "loan_application_1.json") as f:
         app_data = json.load(f)
@@ -182,8 +204,8 @@ except Exception as e:
     print(f"❌ Evaluation result creation failed: {e}")
     sys.exit(1)
 
-# Test 9: JSON serialization
-print("\n[TEST 9] Testing JSON serialization...")
+# Test 10: JSON serialization
+print("\n[TEST 10] Testing JSON serialization...")
 try:
     json_str = result.model_dump_json(indent=2)
     json_data = json.loads(json_str)
@@ -192,8 +214,8 @@ except Exception as e:
     print(f"❌ Serialization failed: {e}")
     sys.exit(1)
 
-# Test 10: Calculate metrics
-print("\n[TEST 10] Testing financial calculations...")
+# Test 11: Calculate metrics
+print("\n[TEST 11] Testing financial calculations...")
 try:
     dti = (app.existing_debt * 12 / app.annual_income) if app.annual_income else 0
     ltv = (app.requested_amount / app.collateral_value * 100) if app.collateral_value else 0
