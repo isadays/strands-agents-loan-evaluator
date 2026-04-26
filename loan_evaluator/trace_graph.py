@@ -51,6 +51,57 @@ def evaluation_trace_summary(evaluation: EvaluationResult) -> Dict[str, Any]:
     }
 
 
+def rationale_trace_summary(reviews: List[ReviewResult]) -> Dict[str, Any]:
+    """Create a redacted summary of the reasoning signals across agents."""
+    final_review = reviews[-1] if reviews else None
+    rationale = final_review.overall_rationale if final_review else None
+
+    action_counts: Dict[str, int] = {}
+    for review in reviews:
+        action_counts[review.recommended_action] = (
+            action_counts.get(review.recommended_action, 0) + 1
+        )
+
+    scores = [review.score for review in reviews]
+    confidences = [review.confidence for review in reviews]
+
+    return {
+        "source": (
+            "loan_officer_overall_rationale"
+            if rationale
+            else "aggregated_agent_reasoning_signals"
+        ),
+        "rationale_present": bool(rationale),
+        "rationale_length": len(rationale or ""),
+        "rationale_redacted": True,
+        "agent_count": len(reviews),
+        "actions": action_counts,
+        "score_min": min(scores) if scores else None,
+        "score_max": max(scores) if scores else None,
+        "score_avg": sum(scores) / len(scores) if scores else None,
+        "confidence_avg": (
+            sum(confidences) / len(confidences)
+            if confidences
+            else None
+        ),
+        "review_signals": [
+            {
+                "reviewer_name": review.reviewer_name,
+                "score": review.score,
+                "recommended_action": review.recommended_action,
+                "confidence": review.confidence,
+                "strength_count": len(review.strengths),
+                "weakness_count": len(review.weaknesses),
+                "risk_count": len(review.risks),
+                "condition_count": len(review.conditions_for_approval or []),
+                "required_document_count": len(review.required_documents or []),
+                "has_overall_rationale": bool(review.overall_rationale),
+            }
+            for review in reviews
+        ],
+    }
+
+
 def agent_output_trace_payload(output: object) -> Dict[str, Any]:
     """Create a redacted agent output payload for LangSmith."""
     raw_output = str(output)
@@ -162,21 +213,7 @@ async def run_langsmith_trace_graph(evaluator: Any, application: LoanApplication
         return {"reviews": [review_trace_summary(r) for r in reviews]}
 
     async def decision_rationale_node(state: TraceState) -> TraceState:
-        final_review = final_review_holder["review"]
-        rationale = final_review.overall_rationale or ""
-        rationale_source = (
-            "loan_officer_overall_rationale"
-            if final_review.overall_rationale
-            else "fallback_review_strengths"
-        )
-        return {
-            "rationale": {
-                "source": rationale_source,
-                "rationale_present": bool(rationale),
-                "rationale_length": len(rationale),
-                "rationale_redacted": True,
-            }
-        }
+        return {"rationale": rationale_trace_summary(reviews)}
 
     async def aggregate_decision_node(state: TraceState) -> TraceState:
         evaluation = evaluator._synthesize_results(

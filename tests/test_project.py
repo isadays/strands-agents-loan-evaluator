@@ -161,6 +161,7 @@ try:
     from loan_evaluator.trace_graph import (
         agent_output_trace_payload,
         application_trace_summary,
+        rationale_trace_summary,
     )
     from langgraph.graph import StateGraph
 
@@ -173,6 +174,12 @@ try:
     assert trace_agent_output["raw_output_redacted"] is True
     assert "raw_output" not in trace_agent_output
     assert trace_agent_output["summary"]["recommended_action"] == review.recommended_action
+
+    rationale_summary = rationale_trace_summary([review])
+    assert rationale_summary["rationale_redacted"] is True
+    assert rationale_summary["agent_count"] == 1
+    assert rationale_summary["actions"][review.recommended_action] == 1
+    assert rationale_summary["review_signals"][0]["strength_count"] == 2
 
     assert StateGraph is not None
     print("✅ Trace payloads are redacted and LangGraph is available")

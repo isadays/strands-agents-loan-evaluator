@@ -209,8 +209,9 @@ The Strands agents still perform the model calls. LangGraph is used to make the
 LangSmith trace graph easier to scan. Trace inputs and outputs are redacted by
 default: raw prompts, raw model output, applicant PII, income, debt, loan amount,
 and rationale text are not sent as custom trace payloads. The
-`decision_rationale` node records whether a rationale was produced, where it came
-from, and its length, while keeping the rationale text local.
+`decision_rationale` node records aggregated reasoning signals from every agent,
+including action counts, score range, confidence average, and counts of
+strengths/weaknesses/risks, while keeping free-form rationale text local.
 
 ## Testing
 
