@@ -1,8 +1,8 @@
 # Strands Agents: Loan Application Evaluator
 
-A multi-agent evaluation system for loan applications using AWS Strands agents and Bedrock models. Leverage multiple specialized AI agents (Credit Analyst, Compliance Officer, Fraud Detector, Risk Manager) to provide comprehensive loan assessments.
+A multi-agent evaluation system for loan applications using AWS Strands agents and Bedrock models. Leverages multiple specialized AI agents (Credit Analyst, Compliance Officer, Fraud Detector, Loan Officer) to provide comprehensive loan assessments.
 
-## 🎯 Overview
+## Overview
 
 This project demonstrates how to use Strands agents with AWS Bedrock to build a sophisticated loan evaluation system. Each agent specializes in a specific aspect of loan evaluation:
 
@@ -13,30 +13,31 @@ This project demonstrates how to use Strands agents with AWS Bedrock to build a 
 
 ### Key Features
 
-✅ Multi-agent orchestration using Strands  
-✅ AWS Bedrock integration for LLM inference  
-✅ Structured evaluation with Pydantic models  
-✅ Langfuse logging for agent tracing and monitoring  
-✅ Configurable evaluation criteria and scoring  
-✅ Sample data and realistic test cases  
-✅ Jupyter notebook for interactive evaluation  
+- Multi-agent orchestration using Strands
+- AWS Bedrock integration for LLM inference
+- Structured evaluation with Pydantic models
+- Langfuse logging for agent tracing and monitoring
+- Configurable evaluation criteria and scoring
+- Sample data and realistic test cases
+- Jupyter notebook for interactive evaluation
+- Comprehensive test suite
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Python 3.10+
 - AWS Account with Bedrock access
 - AWS credentials configured locally
 - pip or conda
 
-## 🚀 Quick Start
+## Quick Start
 
-### 1. Clone & Setup
+### 1. Clone and Setup
 
 ```bash
 git clone https://github.com/isadays/strands-agents-loan-evaluator.git
 cd strands-agents-loan-evaluator
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -44,7 +45,6 @@ pip install -r requirements.txt
 
 ```bash
 aws configure
-# Enter your AWS Access Key ID, Secret Access Key, default region, output format
 ```
 
 ### 3. Run the Evaluator
@@ -60,14 +60,15 @@ Or use Python directly:
 python loan_evaluator.py
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 strands-agents-loan-evaluator/
 ├── testing_langfuse/
 │   └── loan-evaluator/
-│       ├── evaluator_v1.ipynb          # Interactive evaluation notebook
-│       ├── loan_evaluator.py           # Main evaluation module
+│       ├── evaluator_v1.ipynb
+│       ├── loan_evaluator.py
+│       ├── models.py
 │       ├── prompts/
 │       │   ├── credit_analyst_prompt.txt
 │       │   ├── compliance_prompt.txt
@@ -77,51 +78,49 @@ strands-agents-loan-evaluator/
 │           ├── loan_application_1.json
 │           ├── loan_application_2.json
 │           └── loan_application_3.json
+├── tests/
+│   ├── test_project.py
+│   ├── demo.py
+│   └── README.md
 ├── requirements.txt
+├── TESTING.md
 ├── README.md
 └── LICENSE
 ```
 
-## 📊 Example Usage
+## Example Usage
 
 ```python
 from testing_langfuse.loan_evaluator import LoanEvaluator
 
-# Initialize evaluator
 evaluator = LoanEvaluator()
 
-# Define loan application
 loan_app = LoanApplication(
     applicant_name="John Doe",
     requested_amount=250000,
-    purpose="Home Purchase",
+    loan_purpose="Home Purchase",
     employment_status="Employed",
     annual_income=85000,
     credit_score=720,
-    debt_to_income_ratio=0.35,
     employment_years=5,
-    documents=["pay_stubs.pdf", "tax_returns.pdf", "bank_statements.pdf"],
-    notes="Stable employment, good credit history"
+    documents_provided=["pay_stubs", "tax_returns", "bank_statements"]
 )
 
-# Run multi-agent evaluation
 result = evaluator.evaluate(loan_app)
 
-# Access results
 for review in result.reviews:
     print(f"{review.reviewer_name}: {review.score}/100")
     print(f"Recommendation: {review.recommended_action}")
 ```
 
-## 🔧 Configuration
+## Configuration
 
-Edit `testing_langfuse/loan-evaluator/config.py` to customize:
-- LLM model (default: Claude 3 Sonnet via Bedrock)
-- Evaluation criteria weights
-- Risk thresholds
-- Logging preferences
+Edit the `LoanEvaluator` class initialization to customize:
+- LLM model (default: Claude 3.5 Sonnet via Bedrock)
+- AWS region
+- Langfuse logging preferences
 
-## 📝 Evaluation Output
+## Evaluation Output
 
 Each loan application receives:
 - **Score** (0-100): Overall assessment
@@ -131,7 +130,7 @@ Each loan application receives:
 - **Confidence**: Model's confidence in the assessment
 - **Detailed Analysis**: Each agent's specialized feedback
 
-## 🔍 Agents Overview
+## Agents Overview
 
 ### Credit Risk Analyst
 Evaluates:
@@ -164,7 +163,7 @@ Provides:
 - Suggested loan terms if approved
 - Recommended next steps
 
-## 📊 Langfuse Integration
+## Langfuse Integration
 
 All agent interactions are automatically logged to Langfuse for:
 - Agent trace visualization
@@ -173,14 +172,30 @@ All agent interactions are automatically logged to Langfuse for:
 - Cost analysis
 - Debugging and optimization
 
-## 🎓 Learning Resources
+## Testing
+
+Run the test suite to verify all components:
+
+```bash
+python3 tests/test_project.py
+```
+
+Run the demonstration to see the full workflow:
+
+```bash
+python3 tests/demo.py
+```
+
+See [tests/README.md](tests/README.md) for detailed information.
+
+## Learning Resources
 
 - [Strands Documentation](https://github.com/strands-ai/strands)
 - [AWS Bedrock Quickstart](https://docs.aws.amazon.com/bedrock/)
 - [Langfuse Documentation](https://langfuse.com/docs)
 - [Agent Design Patterns](./docs/agent-patterns.md)
 
-## 🤝 Contributing
+## Contributing
 
 Contributions welcome! Please:
 1. Fork the repository
@@ -189,17 +204,17 @@ Contributions welcome! Please:
 4. Push to branch (`git push origin feature/YourFeature`)
 5. Open a Pull Request
 
-## 📄 License
+## License
 
 MIT License - see [LICENSE](LICENSE) file for details
 
-## 🙋 Support
+## Support
 
 For issues, questions, or feedback:
 - Open an issue on GitHub
-- Check existing documentation in `/docs`
+- Check existing documentation in TESTING.md
 - Review the notebook examples
 
 ---
 
-**Built with Strands agents & AWS Bedrock** | Inspired by multi-agent evaluation patterns
+Built with Strands agents and AWS Bedrock

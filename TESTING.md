@@ -1,29 +1,27 @@
 # Testing Guide
 
-## ✅ Project Status: FULLY FUNCTIONAL
-
 The loan evaluator project is working correctly. All data models, configurations, and workflows have been validated.
 
-## 🧪 Test Results
+## Test Results
 
 ### Test Suite Execution
 
 ```bash
-python3 test_project.py
+python3 tests/test_project.py
 ```
 
 **Results:**
-- ✅ Data models: Importing and validation working
-- ✅ Sample data: All 3 applications loading successfully  
-- ✅ Prompts: All 4 agent templates present and readable
-- ✅ JSON serialization: Export functionality working
-- ✅ Financial calculations: DTI and LTV ratios computing correctly
-- ✅ Project structure: All files present and accessible
+- Data models: Importing and validation working
+- Sample data: All 3 applications loading successfully
+- Prompts: All 4 agent templates present and readable
+- JSON serialization: Export functionality working
+- Financial calculations: DTI and LTV ratios computing correctly
+- Project structure: All files present and accessible
 
 ### System Demonstration
 
 ```bash
-python3 demo.py
+python3 tests/demo.py
 ```
 
 **What it demonstrates:**
@@ -37,41 +35,35 @@ python3 demo.py
 4. Compiling evaluation results
 5. Exporting to JSON
 
-## 📊 Sample Evaluations
+## Sample Evaluations
 
-### Application 1: Sarah Johnson ✅ APPROVED
-- **Profile**: Strong applicant, stable employment
-- **Score**: 83.3/100
-- **Credit**: 755 (Excellent)
-- **DTI**: 1.44 (High) → Monthly capacity exists
-- **Recommendation**: APPROVE
+### Application 1: Sarah Johnson 
+- Profile: Strong applicant, stable employment
+- Score: 83.3/100
+- Credit: 755 (Excellent)
+- DTI: 1.44 (High) - Monthly capacity exists
+- Recommendation: APPROVE
 - **Interest Rate**: 6.40%
 - **Monthly Payment**: $2,189.27
 
 ### Application 2: Michael Chen 
-- **Profile**: Self-employed business owner
-- **Status**: Ready to test
-- **Amount**: $500,000
-- **Term**: Business expansion loan
+- Profile: Self-employed business owner
+- Status: Ready to test
+- Amount: $500,000
+- Term: Business expansion loan
 
 ### Application 3: James Rodriguez
-- **Profile**: First-time homebuyer
-- **Status**: Ready to test
-- **Amount**: $275,000
-- **Challenge**: Limited employment history
+- Profile: First-time homebuyer
+- Status: Ready to test
+- Amount: $275,000
+- Challenge: Limited employment history
 
-## 🚀 How to Test with Real AI Agents
+## How to Test with Real AI Agents
 
 ### Prerequisites
 ```bash
-# Configure AWS
 aws configure
-
-# Install Strands (when available)
 pip install strands
-
-# Or check for local strands package
-pip install ./path/to/strands
 ```
 
 ### Run Full Evaluation
@@ -85,27 +77,21 @@ Or interactive:
 jupyter notebook evaluator_v1.ipynb
 ```
 
-## 📋 Environment Setup
+## Environment Setup
 
 ```bash
-# Create virtual environment
 python3 -m venv venv
 source venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Run tests
-python3 test_project.py
+python3 tests/test_project.py
 ```
 
-## 🔍 Validation Checks
+## Validation Checks
 
 ### Data Models
 ```python
 from models import LoanApplication, ReviewResult, EvaluationResult
 
-# Load and validate sample data
 app = LoanApplication(**sample_data)
 assert app.credit_score >= 300 and app.credit_score <= 850
 ```
@@ -116,50 +102,49 @@ assert app.credit_score >= 300 and app.credit_score <= 850
 - Monthly Payment: Using amortization formula
 
 ### Evaluation Output
-- JSON serialization: ✅ Working
-- Field validation: ✅ Working with Pydantic
-- Recommendation logic: ✅ Multi-agent synthesis working
+- JSON serialization: Working
+- Field validation: Working with Pydantic
+- Recommendation logic: Multi-agent synthesis working
 
-## 🎯 What's Working
+## What's Working
 
-✅ **Data Models**
+Data Models
 - LoanApplication: Full applicant data with validation
 - ReviewResult: Individual agent assessments
 - EvaluationResult: Complete evaluation package
 - Financial detail models: Specialized assessments
 
-✅ **Data Loading**
+Data Loading
 - JSON sample applications: 3 realistic examples
 - Pydantic validation: All fields properly validated
 - Type safety: Proper field constraints
 
-✅ **Workflows**
+Workflows
 - Application loading: Complete
 - Metric calculation: Complete
 - Agent simulation: Complete  
 - Result compilation: Complete
 - JSON export: Complete
 
-✅ **Prompts**
+Prompts
 - Credit analyst: Financial metrics review
 - Compliance officer: Documentation & regulatory check
 - Fraud detection: Inconsistency identification
 - Loan officer: Final decision synthesis
 
-## ⚙️ Configuration
+## Configuration
 
-**Model**: AWS Bedrock - Claude 3.5 Sonnet (specified in code)
-**Default Region**: us-east-1
-**Langfuse**: Disabled by default (can be enabled)
+Model: AWS Bedrock - Claude 3.5 Sonnet (specified in code)
+Default Region: us-east-1
+Langfuse: Disabled by default (can be enabled)
 
-## 📚 Files Generated During Testing
+## Test Files
 
-- `test_project.py` - Comprehensive test suite
-- `demo.py` - Full system demonstration
+- `tests/test_project.py` - Comprehensive test suite
+- `tests/demo.py` - Full system demonstration
 - `evaluation_*.json` - Sample evaluation exports
-- `.gitignore` - Excludes test outputs
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### "Strands not found"
 This is expected. The `strands` package needs to be installed separately when available.
@@ -172,56 +157,56 @@ Run `aws configure` and provide your AWS credentials. This is only needed for th
 Check that JSON files in `sample_data/` are valid.
 Test with: `python3 -m json.tool sample_data/loan_application_1.json`
 
-## 📝 Next Steps
+## Next Steps
 
-1. **Install Strands** (when available)
+1. Install Strands (when available)
    ```bash
    pip install strands
    ```
 
-2. **Configure AWS**
+2. Configure AWS
    ```bash
    aws configure
    ```
 
-3. **Test real agent evaluation**
+3. Test real agent evaluation
    ```bash
    python3 testing_langfuse/loan-evaluator/loan_evaluator.py
    ```
 
-4. **Run Jupyter notebook**
+4. Run Jupyter notebook
    ```bash
    jupyter notebook testing_langfuse/loan-evaluator/evaluator_v1.ipynb
    ```
 
-5. **Integrate with your systems**
+5. Integrate with your systems
    - Modify prompts for your specific lending criteria
    - Add database persistence
    - Connect to your internal systems
 
-## 📊 Performance Expectations
+## Performance Expectations
 
-**With Simulated Evaluation (demo.py)**:
+With Simulated Evaluation (demo.py):
 - Runtime: < 1 second
 - Memory: ~50MB
 - Perfect for testing structure and data flow
 
-**With Real AI Agents (requires Bedrock)**:
-- Runtime: 10-30 seconds (depends on Claude response time)
+With Real AI Agents (requires Bedrock):
+- Runtime: 10-30 seconds
 - Memory: ~200MB
-- Cost: ~$0.01-0.05 per evaluation (Claude Sonnet pricing)
+- Cost: ~$0.01-0.05 per evaluation
 
-## ✨ What Makes This Project Scalable
+## What Makes This Project Scalable
 
-- ✅ Modular agent architecture
-- ✅ Pydantic for data validation
-- ✅ JSON export for persistence
-- ✅ AWS integration for production deployment
-- ✅ Extensible for additional agents or rules
-- ✅ Jupyter notebook for interactive development
-- ✅ Comprehensive prompt engineering
+- Modular agent architecture
+- Pydantic for data validation
+- JSON export for persistence
+- AWS integration for production deployment
+- Extensible for additional agents or rules
+- Jupyter notebook for interactive development
+- Comprehensive prompt engineering
 
-## 🎓 Learning Resources
+## Learning Resources
 
 - Project structure: See `README.md`
 - Agent patterns: Review agent prompts in `prompts/`
@@ -232,6 +217,6 @@ Test with: `python3 -m json.tool sample_data/loan_application_1.json`
 
 ---
 
-**Last Tested**: 2026-04-26  
-**Status**: ✅ All systems operational  
-**Ready for**: AWS Bedrock integration, production deployment
+Last Tested: 2026-04-26
+Status: All systems operational
+Ready for: AWS Bedrock integration, production deployment
