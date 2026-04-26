@@ -51,6 +51,52 @@ def evaluation_trace_summary(evaluation: EvaluationResult) -> Dict[str, Any]:
     }
 
 
+def _build_hierarchical_reasoning_structure(review: ReviewResult) -> Dict[str, Any]:
+    """Build hierarchical structure for review reasoning with organized assessment factors."""
+    return {
+        "reviewer_name": review.reviewer_name,
+        "assessment_summary": {
+            "score": review.score,
+            "recommended_action": review.recommended_action,
+            "confidence": review.confidence,
+            "overall_rationale": review.overall_rationale,
+        },
+        "strengths": [
+            {"index": idx, "factor": item}
+            for idx, item in enumerate(review.strengths, 1)
+        ],
+        "weaknesses": [
+            {"index": idx, "factor": item}
+            for idx, item in enumerate(review.weaknesses, 1)
+        ],
+        "risks": [
+            {"index": idx, "factor": item}
+            for idx, item in enumerate(review.risks, 1)
+        ],
+        "approval_requirements": {
+            "conditions_for_approval": review.conditions_for_approval or [],
+            "required_documents": review.required_documents or [],
+        },
+        "fraud_assessment": {
+            "fraud_risk_level": review.fraud_risk_level,
+            "fraud_risk_score": review.fraud_risk_score,
+            "suspicious_items": review.suspicious_items or [],
+            "investigation_needed": review.investigation_needed or [],
+        },
+        "compliance_assessment": {
+            "compliance_issues": review.compliance_issues or [],
+            "documentation_status": review.documentation_status,
+        },
+        "factor_counts": {
+            "total_strengths": len(review.strengths),
+            "total_weaknesses": len(review.weaknesses),
+            "total_risks": len(review.risks),
+            "total_conditions": len(review.conditions_for_approval or []),
+            "total_required_documents": len(review.required_documents or []),
+        },
+    }
+
+
 def rationale_trace_summary(
     reviews: List[ReviewResult],
     include_reasoning_text: bool = False,
@@ -106,15 +152,7 @@ def rationale_trace_summary(
 
     if include_reasoning_text:
         payload["review_reasoning"] = [
-            {
-                "reviewer_name": review.reviewer_name,
-                "strengths": review.strengths,
-                "weaknesses": review.weaknesses,
-                "risks": review.risks,
-                "conditions_for_approval": review.conditions_for_approval or [],
-                "required_documents": review.required_documents or [],
-                "overall_rationale": review.overall_rationale,
-            }
+            _build_hierarchical_reasoning_structure(review)
             for review in reviews
         ]
 
@@ -194,7 +232,7 @@ async def run_langsmith_trace_graph(evaluator: Any, application: LoanApplication
         review = await evaluator._get_agent_review(
             evaluator.evaluators["credit_analyst"],
             app_text_holder["text"],
-            "credit_risk_analyst",
+            "Credit Risk Analyst",
         )
         reviews.append(review)
         return {"reviews": [review_trace_summary(r) for r in reviews]}
@@ -204,7 +242,7 @@ async def run_langsmith_trace_graph(evaluator: Any, application: LoanApplication
         review = await evaluator._get_agent_review(
             evaluator.evaluators["compliance_officer"],
             app_text_holder["text"],
-            "compliance_officer",
+            "Compliance Officer",
         )
         reviews.append(review)
         return {"reviews": [review_trace_summary(r) for r in reviews]}
@@ -214,7 +252,7 @@ async def run_langsmith_trace_graph(evaluator: Any, application: LoanApplication
         review = await evaluator._get_agent_review(
             evaluator.evaluators["fraud_detector"],
             app_text_holder["text"],
-            "fraud_detection_specialist",
+            "Fraud Detection Specialist",
         )
         reviews.append(review)
         return {"reviews": [review_trace_summary(r) for r in reviews]}
@@ -225,7 +263,7 @@ async def run_langsmith_trace_graph(evaluator: Any, application: LoanApplication
         final_review = await evaluator._get_agent_review(
             evaluator.evaluators["loan_officer"],
             synthesis_prompt,
-            "loan_officer",
+            "Loan Officer",
         )
         final_review_holder["review"] = final_review
         reviews.append(final_review)
@@ -253,20 +291,20 @@ async def run_langsmith_trace_graph(evaluator: Any, application: LoanApplication
         return {"evaluation": evaluation_trace_summary(evaluation)}
 
     workflow = StateGraph(TraceState)
-    workflow.add_node("format_application", format_application_node)
-    workflow.add_node("credit_risk_analyst", credit_analyst_node)
-    workflow.add_node("compliance_officer", compliance_officer_node)
-    workflow.add_node("fraud_detection_specialist", fraud_detector_node)
-    workflow.add_node("loan_officer", loan_officer_node)
+    workflow.add_node("Format Application", format_application_node)
+    workflow.add_node("Credit Risk Analyst", credit_analyst_node)
+    workflow.add_node("Compliance Officer", compliance_officer_node)
+    workflow.add_node("Fraud Detection Specialist", fraud_detector_node)
+    workflow.add_node("Loan Officer", loan_officer_node)
     workflow.add_node("decision_rationale", decision_rationale_node)
     workflow.add_node("aggregate_decision", aggregate_decision_node)
 
-    workflow.add_edge(START, "format_application")
-    workflow.add_edge("format_application", "credit_risk_analyst")
-    workflow.add_edge("credit_risk_analyst", "compliance_officer")
-    workflow.add_edge("compliance_officer", "fraud_detection_specialist")
-    workflow.add_edge("fraud_detection_specialist", "loan_officer")
-    workflow.add_edge("loan_officer", "decision_rationale")
+    workflow.add_edge(START, "Format Application")
+    workflow.add_edge("Format Application", "Credit Risk Analyst")
+    workflow.add_edge("Credit Risk Analyst", "Compliance Officer")
+    workflow.add_edge("Compliance Officer", "Fraud Detection Specialist")
+    workflow.add_edge("Fraud Detection Specialist", "Loan Officer")
+    workflow.add_edge("Loan Officer", "decision_rationale")
     workflow.add_edge("decision_rationale", "aggregate_decision")
     workflow.add_edge("aggregate_decision", END)
 
@@ -285,7 +323,7 @@ async def run_langsmith_trace_graph(evaluator: Any, application: LoanApplication
         await graph.ainvoke(
             initial_state,
             config={
-                "run_name": "loan-evaluation",
+                "run_name": "Loan Evaluation Graph",
                 "metadata": {
                     "ls_provider": "aws-bedrock",
                     "ls_model_name": evaluator.model.config.get("model_id"),
@@ -309,7 +347,7 @@ def _normalize_review_json(
                 normalized["recommended_action"] = normalized[alias]
                 break
 
-    if reviewer_type == "loan_officer":
-        normalized["reviewer_name"] = "loan_officer"
+    if reviewer_type == "Loan Officer":
+        normalized["reviewer_name"] = "Loan Officer"
 
     return normalized
