@@ -16,8 +16,7 @@ This project demonstrates how to use Strands agents with AWS Bedrock to build a 
 - Multi-agent orchestration using Strands
 - AWS Bedrock integration for LLM inference
 - Structured evaluation with Pydantic models
-- LangSmith logging for agent tracing and monitoring
-- LangGraph-shaped trace graph for clearer multi-agent observability
+- LangSmith + LangGraph-shaped  logging for agent tracing and monitoring
 - Configurable evaluation criteria and scoring
 - Sample data and realistic test cases
 - Jupyter notebook for interactive evaluation
@@ -85,7 +84,6 @@ strands-agents-loan-evaluator/
 │   ├── demo.py
 │   └── README.md
 ├── requirements.txt
-├── TESTING.md
 ├── README.md
 └── LICENSE
 ```
@@ -118,7 +116,7 @@ for review in result.reviews:
 ## Configuration
 
 Edit the `LoanEvaluator` class initialization to customize:
-- LLM model (default: Claude 3.5 Sonnet v2 via the US Bedrock inference profile)
+- LLM model (default: Claude 4.5 Sonnet v1 via the US Bedrock inference profile)
 - AWS region
 - LangSmith logging preferences
 
@@ -189,7 +187,7 @@ export LANGSMITH_API_KEY=<your-langsmith-api-key>
 export LANGSMITH_PROJECT="strands-agents-loan"
 ```
 
-The default Bedrock model id is `us.anthropic.claude-3-5-sonnet-20241022-v2:0`.
+The default Bedrock model id is `us.anthropic.claude-sonnet-4-5-20250929-v1:0`.
 This is the US inference profile id, which is valid from `us-east-1`.
 
 When tracing is enabled, the evaluator runs through a LangGraph-shaped workflow:
@@ -241,32 +239,13 @@ python3 tests/demo.py
 
 See [tests/README.md](tests/README.md) for detailed information.
 
-## Learning Resources
+## References
 
 - [Strands Documentation](https://github.com/strands-ai/strands)
 - [AWS Bedrock Quickstart](https://docs.aws.amazon.com/bedrock/)
 - [LangSmith Documentation](https://docs.langchain.com/langsmith)
 - [Agent Design Patterns](./docs/agent-patterns.md)
 
-## Contributing
-
-Contributions welcome! Please:
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/YourFeature`)
-3. Commit changes (`git commit -am 'Add YourFeature'`)
-4. Push to branch (`git push origin feature/YourFeature`)
-5. Open a Pull Request
-
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details
-
-## Support
-
-For issues, questions, or feedback:
-- Open an issue on GitHub
-- Check existing documentation in TESTING.md
-- Review the notebook examples
 
 ---
 
