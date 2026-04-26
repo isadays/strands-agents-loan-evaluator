@@ -63,7 +63,7 @@ python3 tests/demo.py
 ### Prerequisites
 ```bash
 aws configure
-pip install strands
+pip install -r requirements.txt
 ```
 
 ### Run Full Evaluation
@@ -136,7 +136,7 @@ Prompts
 
 Model: AWS Bedrock - Claude 3.5 Sonnet (specified in code)
 Default Region: us-east-1
-Langfuse: Disabled by default (can be enabled)
+LangSmith: Disabled by default (can be enabled)
 
 ## Test Files
 
@@ -147,8 +147,7 @@ Langfuse: Disabled by default (can be enabled)
 ## Troubleshooting
 
 ### "Strands not found"
-This is expected. The `strands` package needs to be installed separately when available.
-The project structure is ready for it.
+Install the current Strands Agents SDK from `requirements.txt`.
 
 ### "AWS credentials not configured"
 Run `aws configure` and provide your AWS credentials. This is only needed for the actual agent evaluation with Bedrock.
@@ -159,9 +158,9 @@ Test with: `python3 -m json.tool sample_data/loan_application_1.json`
 
 ## Next Steps
 
-1. Install Strands (when available)
+1. Install dependencies
    ```bash
-   pip install strands
+   pip install -r requirements.txt
    ```
 
 2. Configure AWS

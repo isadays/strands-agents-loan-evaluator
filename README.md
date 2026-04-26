@@ -16,7 +16,7 @@ This project demonstrates how to use Strands agents with AWS Bedrock to build a 
 - Multi-agent orchestration using Strands
 - AWS Bedrock integration for LLM inference
 - Structured evaluation with Pydantic models
-- Langfuse logging for agent tracing and monitoring
+- LangSmith logging for agent tracing and monitoring
 - Configurable evaluation criteria and scoring
 - Sample data and realistic test cases
 - Jupyter notebook for interactive evaluation
@@ -118,7 +118,7 @@ for review in result.reviews:
 Edit the `LoanEvaluator` class initialization to customize:
 - LLM model (default: Claude 3.5 Sonnet via Bedrock)
 - AWS region
-- Langfuse logging preferences
+- LangSmith logging preferences
 
 ## Evaluation Output
 
@@ -163,14 +163,23 @@ Provides:
 - Suggested loan terms if approved
 - Recommended next steps
 
-## Langfuse Integration
+## LangSmith Integration
 
-All agent interactions are automatically logged to Langfuse for:
+When `use_langsmith=True`, agent interactions are logged to LangSmith for:
 - Agent trace visualization
 - Performance monitoring
 - Token usage tracking
 - Cost analysis
 - Debugging and optimization
+
+Set the standard LangSmith environment variables before running:
+
+```bash
+export LANGSMITH_TRACING=true
+export LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+export LANGSMITH_API_KEY=<your-langsmith-api-key>
+export LANGSMITH_PROJECT="strands-agents-loan"
+```
 
 ## Testing
 
@@ -192,7 +201,7 @@ See [tests/README.md](tests/README.md) for detailed information.
 
 - [Strands Documentation](https://github.com/strands-ai/strands)
 - [AWS Bedrock Quickstart](https://docs.aws.amazon.com/bedrock/)
-- [Langfuse Documentation](https://langfuse.com/docs)
+- [LangSmith Documentation](https://docs.langchain.com/langsmith)
 - [Agent Design Patterns](./docs/agent-patterns.md)
 
 ## Contributing

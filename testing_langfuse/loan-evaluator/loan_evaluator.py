@@ -9,13 +9,13 @@ and final loan officer recommendation.
 from __future__ import annotations
 
 import json
+import asyncio
+import os
 from typing import List, Optional, Dict, Any
 from pathlib import Path
-import os
 from datetime import datetime
 
-from pydantic import BaseModel, Field
-from strands import Agent, tool
+from strands import Agent
 from strands.models import BedrockModel
 
 from models import (
@@ -35,7 +35,8 @@ class LoanEvaluator:
         self,
         model_name: str = "anthropic.claude-3-5-sonnet-20241022",
         region: str = "us-east-1",
-        use_langfuse: bool = False,
+        use_langsmith: bool = False,
+        use_langfuse: Optional[bool] = None,
     ):
         """
         Initialize the loan evaluator.
@@ -43,13 +44,19 @@ class LoanEvaluator:
         Args:
             model_name: AWS Bedrock model ID
             region: AWS region
-            use_langfuse: Enable Langfuse tracing
+            use_langsmith: Enable LangSmith tracing
+            use_langfuse: Deprecated alias for use_langsmith
         """
         self.model = BedrockModel(
-            model_name=model_name,
+            model_id=model_name,
             region_name=region,
         )
-        self.use_langfuse = use_langfuse
+        if use_langfuse is not None:
+            use_langsmith = use_langfuse
+
+        self.use_langsmith = use_langsmith
+        self.langsmith_project = os.getenv("LANGSMITH_PROJECT", "strands-agents-loan")
+
         self.prompts = self._load_prompts()
         self.evaluators = self._initialize_agents()
 
@@ -83,29 +90,33 @@ class LoanEvaluator:
         # Credit Risk Analyst
         agents["credit_analyst"] = Agent(
             name="credit_analyst",
-            instructions=self.prompts.get("credit_analyst", ""),
+            system_prompt=self.prompts.get("credit_analyst", ""),
             model=self.model,
+            callback_handler=None,
         )
 
         # Compliance Officer
         agents["compliance_officer"] = Agent(
             name="compliance_officer",
-            instructions=self.prompts.get("compliance_officer", ""),
+            system_prompt=self.prompts.get("compliance_officer", ""),
             model=self.model,
+            callback_handler=None,
         )
 
         # Fraud Detection Specialist
         agents["fraud_detector"] = Agent(
             name="fraud_detector",
-            instructions=self.prompts.get("fraud_detector", ""),
+            system_prompt=self.prompts.get("fraud_detector", ""),
             model=self.model,
+            callback_handler=None,
         )
 
         # Loan Officer (Final Decision)
         agents["loan_officer"] = Agent(
             name="loan_officer",
-            instructions=self.prompts.get("loan_officer", ""),
+            system_prompt=self.prompts.get("loan_officer", ""),
             model=self.model,
+            callback_handler=None,
         )
 
         return agents
@@ -186,7 +197,7 @@ Review this loan application and provide your assessment.
 Remember to return ONLY valid JSON matching the specified format for {reviewer_type}.
 """
 
-        response = await agent.run(prompt)
+        response = await self._invoke_agent(agent, prompt, reviewer_type)
 
         # Parse JSON response
         try:
@@ -213,6 +224,56 @@ Remember to return ONLY valid JSON matching the specified format for {reviewer_t
                 confidence=0.1,
             )
 
+    async def _invoke_agent(
+        self, agent: Agent, prompt: str, reviewer_type: str
+    ) -> object:
+        """Invoke an agent, optionally wrapping the call in a LangSmith LLM run."""
+        if not self.use_langsmith:
+            return await agent.invoke_async(prompt)
+
+        from langsmith import traceable
+
+        model_id = self.model.config.get("model_id")
+
+        def process_inputs(inputs: Dict[str, Any]) -> Dict[str, Any]:
+            return {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": inputs["prompt_text"],
+                    }
+                ]
+            }
+
+        def process_outputs(output: object) -> Dict[str, Any]:
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": str(output),
+                        }
+                    }
+                ]
+            }
+
+        @traceable(
+            run_type="llm",
+            name=f"{reviewer_type}-review",
+            metadata={
+                "reviewer_type": reviewer_type,
+                "agent_name": getattr(agent, "name", None),
+                "ls_provider": "aws-bedrock",
+                "ls_model_name": model_id,
+            },
+            process_inputs=process_inputs,
+            process_outputs=process_outputs,
+        )
+        async def invoke_with_trace(prompt_text: str) -> object:
+            return await agent.invoke_async(prompt_text)
+
+        return await invoke_with_trace(prompt)
+
     def evaluate(self, application: LoanApplication) -> EvaluationResult:
         """
         Perform complete multi-agent evaluation of a loan application.
@@ -223,6 +284,37 @@ Remember to return ONLY valid JSON matching the specified format for {reviewer_t
         Returns:
             Complete evaluation result with all reviews and final recommendation
         """
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(self.evaluate_async(application))
+
+        raise RuntimeError(
+            "LoanEvaluator.evaluate() cannot run inside an active event loop. "
+            "Use 'await evaluator.evaluate_async(application)' in notebooks."
+        )
+
+    async def evaluate_async(self, application: LoanApplication) -> EvaluationResult:
+        """
+        Perform complete multi-agent evaluation of a loan application asynchronously.
+
+        Use this method from notebooks and other async environments.
+        """
+        if self.use_langsmith:
+            from langsmith import tracing_context
+
+            with tracing_context(
+                enabled=True,
+                project_name=self.langsmith_project,
+            ):
+                return await self._evaluate_async_impl(application)
+
+        return await self._evaluate_async_impl(application)
+
+    async def _evaluate_async_impl(
+        self, application: LoanApplication
+    ) -> EvaluationResult:
+        """Run the evaluator inside the active tracing context."""
         # Format application
         app_text = self._format_application_for_review(application)
 
@@ -231,7 +323,7 @@ Remember to return ONLY valid JSON matching the specified format for {reviewer_t
 
         # Credit Analyst
         print("Running Credit Risk Analysis...")
-        credit_review = self._run_agent_sync(
+        credit_review = await self._get_agent_review(
             self.evaluators["credit_analyst"],
             app_text,
             "credit_risk_analyst",
@@ -240,7 +332,7 @@ Remember to return ONLY valid JSON matching the specified format for {reviewer_t
 
         # Compliance Officer
         print("Running Compliance Review...")
-        compliance_review = self._run_agent_sync(
+        compliance_review = await self._get_agent_review(
             self.evaluators["compliance_officer"],
             app_text,
             "compliance_officer",
@@ -249,7 +341,7 @@ Remember to return ONLY valid JSON matching the specified format for {reviewer_t
 
         # Fraud Detector
         print("Running Fraud Detection...")
-        fraud_review = self._run_agent_sync(
+        fraud_review = await self._get_agent_review(
             self.evaluators["fraud_detector"],
             app_text,
             "fraud_detection_specialist",
@@ -261,7 +353,7 @@ Remember to return ONLY valid JSON matching the specified format for {reviewer_t
 
         # Loan Officer (Final Decision)
         print("Getting Final Loan Officer Review...")
-        loan_officer_review = self._run_agent_sync(
+        loan_officer_review = await self._get_agent_review(
             self.evaluators["loan_officer"],
             synthesis_prompt,
             "loan_officer",
@@ -273,23 +365,25 @@ Remember to return ONLY valid JSON matching the specified format for {reviewer_t
             application, reviews, loan_officer_review
         )
 
+        if self.use_langsmith:
+            self._flush_langsmith()
+
         return evaluation
+
+    def _flush_langsmith(self) -> None:
+        """Flush LangSmith background tracing when the installed SDK supports it."""
+        try:
+            from langsmith.run_helpers import wait_for_all_tracers
+        except ImportError:
+            return
+
+        wait_for_all_tracers()
 
     def _run_agent_sync(
         self, agent: Agent, prompt_text: str, reviewer_type: str
     ) -> ReviewResult:
         """Synchronous wrapper for agent execution."""
-        import asyncio
-
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        return loop.run_until_complete(
-            self._get_agent_review(agent, prompt_text, reviewer_type)
-        )
+        return asyncio.run(self._get_agent_review(agent, prompt_text, reviewer_type))
 
     def _create_synthesis_prompt(
         self, application: LoanApplication, reviews: List[ReviewResult]

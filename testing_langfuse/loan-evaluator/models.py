@@ -87,6 +87,7 @@ class ReviewResult(BaseModel):
     recommended_terms: Optional[Dict[str, Any]] = None
     conditions_for_approval: Optional[List[str]] = None
     required_documents: Optional[List[str]] = None
+    overall_rationale: Optional[str] = None
 
 
 class EvaluationResult(BaseModel):
