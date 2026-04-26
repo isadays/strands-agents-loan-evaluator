@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import asyncio
 import os
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, TypedDict
 from pathlib import Path
 from datetime import datetime
 
@@ -436,44 +436,131 @@ The JSON object must include "recommended_action" with one of:
         Use this method from notebooks and other async environments.
         """
         if self.use_langsmith:
-            from langsmith import traceable, tracing_context
-
-            def process_inputs(inputs: Dict[str, Any]) -> Dict[str, Any]:
-                return {
-                    "loan_application": self._application_trace_summary(
-                        inputs["loan_application"]
-                    )
-                }
-
-            def process_outputs(output: EvaluationResult) -> Dict[str, Any]:
-                return self._evaluation_trace_summary(output)
-
-            @traceable(
-                run_type="chain",
-                name="loan-evaluation",
-                metadata={
-                    "ls_provider": "aws-bedrock",
-                    "ls_model_name": self.model.config.get("model_id"),
-                },
-                process_inputs=process_inputs,
-                process_outputs=process_outputs,
-            )
-            async def run_with_trace(
-                loan_application: LoanApplication,
-            ) -> EvaluationResult:
-                return await self._evaluate_async_impl(loan_application)
-
-            with tracing_context(
-                enabled=True,
-                project_name=self.langsmith_project,
-                client=self.langsmith_client,
-            ):
-                result = await run_with_trace(application)
-
-            self._flush_langsmith()
-            return result
+            return await self._evaluate_async_langgraph(application)
 
         return await self._evaluate_async_impl(application)
+
+    async def _evaluate_async_langgraph(
+        self, application: LoanApplication
+    ) -> EvaluationResult:
+        """Run evaluation through LangGraph so LangSmith shows clear graph nodes."""
+        try:
+            from langgraph.graph import END, START, StateGraph
+            from langsmith import tracing_context
+        except ImportError as e:
+            raise RuntimeError(
+                "LangGraph is required for LangSmith graph traces. "
+                "Install dependencies with: pip install -r requirements.txt"
+            ) from e
+
+        class TraceState(TypedDict, total=False):
+            application: Dict[str, Any]
+            reviews: List[Dict[str, Any]]
+            evaluation: Dict[str, Any]
+
+        app_text_holder: Dict[str, str] = {}
+        reviews: List[ReviewResult] = []
+        final_review_holder: Dict[str, ReviewResult] = {}
+        evaluation_holder: Dict[str, EvaluationResult] = {}
+
+        async def format_application_node(state: TraceState) -> TraceState:
+            app_text_holder["text"] = self._format_application_for_review(application)
+            return {
+                "application": self._application_trace_summary(application),
+                "reviews": [],
+            }
+
+        async def credit_analyst_node(state: TraceState) -> TraceState:
+            print("Running Credit Risk Analysis...")
+            review = await self._get_agent_review(
+                self.evaluators["credit_analyst"],
+                app_text_holder["text"],
+                "credit_risk_analyst",
+            )
+            reviews.append(review)
+            return {"reviews": [self._review_trace_summary(r) for r in reviews]}
+
+        async def compliance_officer_node(state: TraceState) -> TraceState:
+            print("Running Compliance Review...")
+            review = await self._get_agent_review(
+                self.evaluators["compliance_officer"],
+                app_text_holder["text"],
+                "compliance_officer",
+            )
+            reviews.append(review)
+            return {"reviews": [self._review_trace_summary(r) for r in reviews]}
+
+        async def fraud_detector_node(state: TraceState) -> TraceState:
+            print("Running Fraud Detection...")
+            review = await self._get_agent_review(
+                self.evaluators["fraud_detector"],
+                app_text_holder["text"],
+                "fraud_detection_specialist",
+            )
+            reviews.append(review)
+            return {"reviews": [self._review_trace_summary(r) for r in reviews]}
+
+        async def loan_officer_node(state: TraceState) -> TraceState:
+            synthesis_prompt = self._create_synthesis_prompt(application, reviews)
+            print("Getting Final Loan Officer Review...")
+            final_review = await self._get_agent_review(
+                self.evaluators["loan_officer"],
+                synthesis_prompt,
+                "loan_officer",
+            )
+            final_review_holder["review"] = final_review
+            reviews.append(final_review)
+            return {"reviews": [self._review_trace_summary(r) for r in reviews]}
+
+        async def aggregate_decision_node(state: TraceState) -> TraceState:
+            evaluation = self._synthesize_results(
+                application,
+                reviews,
+                final_review_holder["review"],
+            )
+            evaluation_holder["result"] = evaluation
+            return {"evaluation": self._evaluation_trace_summary(evaluation)}
+
+        workflow = StateGraph(TraceState)
+        workflow.add_node("format_application", format_application_node)
+        workflow.add_node("credit_risk_analyst", credit_analyst_node)
+        workflow.add_node("compliance_officer", compliance_officer_node)
+        workflow.add_node("fraud_detection_specialist", fraud_detector_node)
+        workflow.add_node("loan_officer", loan_officer_node)
+        workflow.add_node("aggregate_decision", aggregate_decision_node)
+
+        workflow.add_edge(START, "format_application")
+        workflow.add_edge("format_application", "credit_risk_analyst")
+        workflow.add_edge("credit_risk_analyst", "compliance_officer")
+        workflow.add_edge("compliance_officer", "fraud_detection_specialist")
+        workflow.add_edge("fraud_detection_specialist", "loan_officer")
+        workflow.add_edge("loan_officer", "aggregate_decision")
+        workflow.add_edge("aggregate_decision", END)
+
+        graph = workflow.compile()
+        initial_state: TraceState = {
+            "application": self._application_trace_summary(application),
+            "reviews": [],
+        }
+
+        with tracing_context(
+            enabled=True,
+            project_name=self.langsmith_project,
+            client=self.langsmith_client,
+        ):
+            await graph.ainvoke(
+                initial_state,
+                config={
+                    "run_name": "loan-evaluation",
+                    "metadata": {
+                        "ls_provider": "aws-bedrock",
+                        "ls_model_name": self.model.config.get("model_id"),
+                    },
+                },
+            )
+
+        self._flush_langsmith()
+        return evaluation_holder["result"]
 
     async def _evaluate_async_impl(
         self, application: LoanApplication

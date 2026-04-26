@@ -137,6 +137,7 @@ Prompts
 Model: AWS Bedrock - Claude 3.5 Sonnet v2 through the US inference profile
 Default Region: us-east-1
 LangSmith: Disabled by default (can be enabled)
+LangGraph: Used to shape LangSmith traces when tracing is enabled
 
 ## Test Files
 

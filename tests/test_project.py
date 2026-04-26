@@ -158,6 +158,7 @@ except Exception as e:
 print("\n[TEST 8] Checking redacted LangSmith trace payloads...")
 try:
     from loan_evaluator.loan_evaluator import LoanEvaluator
+    from langgraph.graph import StateGraph
 
     trace_input = LoanEvaluator._application_trace_summary(app)
     assert "applicant_name" not in trace_input
@@ -171,7 +172,8 @@ try:
     assert "raw_output" not in trace_agent_output
     assert trace_agent_output["summary"]["recommended_action"] == review.recommended_action
 
-    print("✅ Trace payloads are redacted and summarized")
+    assert StateGraph is not None
+    print("✅ Trace payloads are redacted and LangGraph is available")
 except Exception as e:
     print(f"❌ Trace payload check failed: {e}")
     sys.exit(1)

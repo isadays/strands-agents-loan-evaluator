@@ -17,6 +17,7 @@ This project demonstrates how to use Strands agents with AWS Bedrock to build a 
 - AWS Bedrock integration for LLM inference
 - Structured evaluation with Pydantic models
 - LangSmith logging for agent tracing and monitoring
+- LangGraph-shaped trace graph for clearer multi-agent observability
 - Configurable evaluation criteria and scoring
 - Sample data and realistic test cases
 - Jupyter notebook for interactive evaluation
@@ -189,6 +190,23 @@ export LANGSMITH_PROJECT="strands-agents-loan"
 
 The default Bedrock model id is `us.anthropic.claude-3-5-sonnet-20241022-v2:0`.
 This is the US inference profile id, which is valid from `us-east-1`.
+
+When tracing is enabled, the evaluator runs through a LangGraph-shaped workflow:
+
+```text
+loan-evaluation
+├── format_application
+├── credit_risk_analyst
+├── compliance_officer
+├── fraud_detection_specialist
+├── loan_officer
+└── aggregate_decision
+```
+
+The Strands agents still perform the model calls. LangGraph is used to make the
+LangSmith trace graph easier to scan. Trace inputs and outputs are redacted by
+default: raw prompts, raw model output, applicant PII, income, debt, loan amount,
+and rationale text are not sent as custom trace payloads.
 
 ## Testing
 
