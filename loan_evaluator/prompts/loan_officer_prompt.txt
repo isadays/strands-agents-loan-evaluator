@@ -42,7 +42,7 @@ Return strict JSON:
 {
   "reviewer_name": "loan_officer",
   "score": int (0-100),
-  "final_recommendation": "approve" | "conditional_approval" | "request_more_info" | "deny",
+  "recommended_action": "approve" | "conditional_approval" | "request_more_info" | "deny",
   "strengths": [str],
   "weaknesses": [str],
   "risks": [str],

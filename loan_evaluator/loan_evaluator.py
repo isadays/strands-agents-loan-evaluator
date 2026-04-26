@@ -221,6 +221,8 @@ Review this loan application and provide your assessment.
 {application_text}
 
 Remember to return ONLY valid JSON matching the specified format for {reviewer_type}.
+The JSON object must include "recommended_action" with one of:
+"approve", "conditional_approval", "deny", "request_more_info", or "manual_review".
 """
 
         response = await self._invoke_agent(agent, prompt, reviewer_type)
@@ -235,6 +237,7 @@ Remember to return ONLY valid JSON matching the specified format for {reviewer_t
                 json_str = json_str.split("```")[1].split("```")[0]
 
             json_data = json.loads(json_str)
+            json_data = self._normalize_review_json(json_data, reviewer_type)
             return ReviewResult(**json_data)
 
         except (json.JSONDecodeError, ValueError) as e:
@@ -249,6 +252,24 @@ Remember to return ONLY valid JSON matching the specified format for {reviewer_t
                 recommended_action="request_more_info",
                 confidence=0.1,
             )
+
+    @staticmethod
+    def _normalize_review_json(
+        json_data: Dict[str, Any], reviewer_type: str
+    ) -> Dict[str, Any]:
+        """Normalize common LLM response variants into ReviewResult fields."""
+        normalized = dict(json_data)
+
+        if "recommended_action" not in normalized:
+            for alias in ("final_recommendation", "recommendation", "action"):
+                if alias in normalized:
+                    normalized["recommended_action"] = normalized[alias]
+                    break
+
+        if reviewer_type == "loan_officer":
+            normalized["reviewer_name"] = "loan_officer"
+
+        return normalized
 
     async def _invoke_agent(
         self, agent: Agent, prompt: str, reviewer_type: str
@@ -435,6 +456,7 @@ Key Risks: {", ".join(review.risks[:2]) if review.risks else "None"}
 
 As the Loan Officer, synthesize all specialist reviews above and provide your 
 final recommendation. Consider all perspectives and provide a holistic assessment.
+Return ONLY strict JSON with "recommended_action", not "final_recommendation".
 """
 
     def _synthesize_results(
