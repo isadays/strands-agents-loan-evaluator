@@ -123,6 +123,7 @@ required_files = [
     "loan_evaluator/__init__.py",
     "loan_evaluator/loan_evaluator.py",
     "loan_evaluator/models.py",
+    "loan_evaluator/trace_graph.py",
     "loan_evaluator/evaluator_v1.ipynb",
 ]
 
@@ -157,17 +158,18 @@ except Exception as e:
 # Test 8: Verify redacted LangSmith trace payloads
 print("\n[TEST 8] Checking redacted LangSmith trace payloads...")
 try:
-    from loan_evaluator.loan_evaluator import LoanEvaluator
+    from loan_evaluator.trace_graph import (
+        agent_output_trace_payload,
+        application_trace_summary,
+    )
     from langgraph.graph import StateGraph
 
-    trace_input = LoanEvaluator._application_trace_summary(app)
+    trace_input = application_trace_summary(app)
     assert "applicant_name" not in trace_input
     assert "annual_income" not in trace_input
     assert "loan_purpose" in trace_input
 
-    trace_agent_output = LoanEvaluator._agent_output_trace_payload(
-        review.model_dump_json()
-    )
+    trace_agent_output = agent_output_trace_payload(review.model_dump_json())
     assert trace_agent_output["raw_output_redacted"] is True
     assert "raw_output" not in trace_agent_output
     assert trace_agent_output["summary"]["recommended_action"] == review.recommended_action
