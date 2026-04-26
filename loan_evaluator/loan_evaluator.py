@@ -18,14 +18,24 @@ from datetime import datetime
 from strands import Agent
 from strands.models import BedrockModel
 
-from models import (
-    LoanApplication,
-    ReviewResult,
-    EvaluationResult,
-    CreditAnalysisDetail,
-    FraudAnalysisDetail,
-    ComplianceAnalysisDetail,
-)
+try:
+    from .models import (
+        LoanApplication,
+        ReviewResult,
+        EvaluationResult,
+        CreditAnalysisDetail,
+        FraudAnalysisDetail,
+        ComplianceAnalysisDetail,
+    )
+except ImportError:
+    from models import (
+        LoanApplication,
+        ReviewResult,
+        EvaluationResult,
+        CreditAnalysisDetail,
+        FraudAnalysisDetail,
+        ComplianceAnalysisDetail,
+    )
 
 
 class LoanEvaluator:

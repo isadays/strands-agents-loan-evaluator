@@ -2,6 +2,9 @@
 
 This directory contains test and demonstration scripts for the Loan Evaluator project.
 
+The application package lives in `loan_evaluator/`; tests should import public
+models and the evaluator from `loan_evaluator`.
+
 ## Scripts
 
 ### `test_project.py`
@@ -10,7 +13,7 @@ Comprehensive test suite validating:
 - Sample data loading and Pydantic validation
 - Review object creation
 - Prompt template availability
-- Project file structure
+- Project file structure under `loan_evaluator/`
 - Evaluation result compilation
 - JSON serialization
 - Financial calculations (DTI, LTV)
@@ -45,7 +48,7 @@ python3 tests/demo.py
 ✅ Prompts - 4 specialized agent templates  
 ✅ Financial Calculations - DTI, LTV, monthly payments  
 ✅ JSON Export - Serialization and file output  
-✅ Project Structure - All required files present  
+✅ Project Structure - Required `loan_evaluator/` package files present  
 
 ## Expected Output
 

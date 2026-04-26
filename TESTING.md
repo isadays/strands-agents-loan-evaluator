@@ -68,7 +68,7 @@ pip install -r requirements.txt
 
 ### Run Full Evaluation
 ```bash
-cd testing_langfuse/loan-evaluator
+cd loan_evaluator
 python3 loan_evaluator.py
 ```
 
@@ -90,7 +90,7 @@ python3 tests/test_project.py
 
 ### Data Models
 ```python
-from models import LoanApplication, ReviewResult, EvaluationResult
+from loan_evaluator import LoanApplication, ReviewResult, EvaluationResult
 
 app = LoanApplication(**sample_data)
 assert app.credit_score >= 300 and app.credit_score <= 850
@@ -170,12 +170,12 @@ Test with: `python3 -m json.tool sample_data/loan_application_1.json`
 
 3. Test real agent evaluation
    ```bash
-   python3 testing_langfuse/loan-evaluator/loan_evaluator.py
+   python3 loan_evaluator/loan_evaluator.py
    ```
 
 4. Run Jupyter notebook
    ```bash
-   jupyter notebook testing_langfuse/loan-evaluator/evaluator_v1.ipynb
+   jupyter notebook loan_evaluator/evaluator_v1.ipynb
    ```
 
 5. Integrate with your systems
@@ -208,11 +208,11 @@ With Real AI Agents (requires Bedrock):
 ## Learning Resources
 
 - Project structure: See `README.md`
-- Agent patterns: Review agent prompts in `prompts/`
-- Data models: See `models.py`
-- Sample data: Review JSON in `sample_data/`
-- Full implementation: See `loan_evaluator.py`
-- Interactive notebook: Open `evaluator_v1.ipynb`
+- Agent patterns: Review agent prompts in `loan_evaluator/prompts/`
+- Data models: See `loan_evaluator/models.py`
+- Sample data: Review JSON in `loan_evaluator/sample_data/`
+- Full implementation: See `loan_evaluator/loan_evaluator.py`
+- Interactive notebook: Open `loan_evaluator/evaluator_v1.ipynb`
 
 ---
 

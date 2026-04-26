@@ -51,7 +51,7 @@ aws configure
 
 Open and run the Jupyter notebook:
 ```bash
-cd testing_langfuse/loan-evaluator
+cd loan_evaluator
 jupyter notebook evaluator_v1.ipynb
 ```
 
@@ -64,20 +64,20 @@ python loan_evaluator.py
 
 ```
 strands-agents-loan-evaluator/
-├── testing_langfuse/
-│   └── loan-evaluator/
-│       ├── evaluator_v1.ipynb
-│       ├── loan_evaluator.py
-│       ├── models.py
-│       ├── prompts/
-│       │   ├── credit_analyst_prompt.txt
-│       │   ├── compliance_prompt.txt
-│       │   ├── fraud_detection_prompt.txt
-│       │   └── loan_officer_prompt.txt
-│       └── sample_data/
-│           ├── loan_application_1.json
-│           ├── loan_application_2.json
-│           └── loan_application_3.json
+├── loan_evaluator/
+│   ├── __init__.py
+│   ├── evaluator_v1.ipynb
+│   ├── loan_evaluator.py
+│   ├── models.py
+│   ├── prompts/
+│   │   ├── credit_analyst_prompt.txt
+│   │   ├── compliance_prompt.txt
+│   │   ├── fraud_detection_prompt.txt
+│   │   └── loan_officer_prompt.txt
+│   └── sample_data/
+│       ├── loan_application_1.json
+│       ├── loan_application_2.json
+│       └── loan_application_3.json
 ├── tests/
 │   ├── test_project.py
 │   ├── demo.py
@@ -91,9 +91,9 @@ strands-agents-loan-evaluator/
 ## Example Usage
 
 ```python
-from testing_langfuse.loan_evaluator import LoanEvaluator
+from loan_evaluator import LoanApplication, LoanEvaluator
 
-evaluator = LoanEvaluator()
+evaluator = LoanEvaluator(use_langsmith=True)
 
 loan_app = LoanApplication(
     applicant_name="John Doe",
@@ -119,6 +119,12 @@ Edit the `LoanEvaluator` class initialization to customize:
 - LLM model (default: Claude 3.5 Sonnet via Bedrock)
 - AWS region
 - LangSmith logging preferences
+
+In notebooks, use the async entrypoint:
+
+```python
+result = await evaluator.evaluate_async(loan_app)
+```
 
 ## Evaluation Output
 

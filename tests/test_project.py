@@ -9,9 +9,9 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-# Add testing_langfuse to path
+# Add project package to path
 project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root / "testing_langfuse" / "loan-evaluator"))
+sys.path.insert(0, str(project_root))
 
 print("=" * 70)
 print("LOAN EVALUATOR - PROJECT TEST SUITE")
@@ -20,7 +20,7 @@ print("=" * 70)
 # Test 1: Import models
 print("\n[TEST 1] Importing data models...")
 try:
-    from models import (
+    from loan_evaluator import (
         LoanApplication,
         ReviewResult,
         EvaluationResult,
@@ -35,7 +35,7 @@ except ImportError as e:
 
 # Test 2: Load and validate sample data
 print("\n[TEST 2] Loading sample loan applications...")
-sample_files = list((project_root / "testing_langfuse" / "loan-evaluator" / "sample_data").glob("*.json"))
+sample_files = list((project_root / "loan_evaluator" / "sample_data").glob("*.json"))
 
 if not sample_files:
     print("❌ No sample data files found")
@@ -72,7 +72,7 @@ except Exception as e:
 
 # Test 4: Check prompt files
 print("\n[TEST 4] Checking prompt templates...")
-prompts_dir = project_root / "testing_langfuse" / "loan-evaluator" / "prompts"
+prompts_dir = project_root / "loan_evaluator" / "prompts"
 expected_prompts = [
     "credit_analyst_prompt.txt",
     "compliance_prompt.txt",
@@ -96,9 +96,10 @@ required_files = [
     "LICENSE",
     "requirements.txt",
     ".gitignore",
-    "testing_langfuse/loan-evaluator/loan_evaluator.py",
-    "testing_langfuse/loan-evaluator/models.py",
-    "testing_langfuse/loan-evaluator/evaluator_v1.ipynb",
+    "loan_evaluator/__init__.py",
+    "loan_evaluator/loan_evaluator.py",
+    "loan_evaluator/models.py",
+    "loan_evaluator/evaluator_v1.ipynb",
 ]
 
 for file_path in required_files:
@@ -112,7 +113,7 @@ for file_path in required_files:
 # Test 6: Test EvaluationResult creation
 print("\n[TEST 6] Creating evaluation result object...")
 try:
-    with open(project_root / "testing_langfuse" / "loan-evaluator" / "sample_data" / "loan_application_1.json") as f:
+    with open(project_root / "loan_evaluator" / "sample_data" / "loan_application_1.json") as f:
         app_data = json.load(f)
     
     app = LoanApplication(**app_data)

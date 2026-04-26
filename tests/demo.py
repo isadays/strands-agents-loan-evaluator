@@ -11,9 +11,9 @@ from datetime import datetime
 
 # Add to path
 project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root / "testing_langfuse" / "loan-evaluator"))
+sys.path.insert(0, str(project_root))
 
-from models import (
+from loan_evaluator import (
     LoanApplication,
     ReviewResult,
     EvaluationResult,
@@ -28,7 +28,7 @@ print("=" * 70)
 
 # Load a sample application
 print("\n[STEP 1] Loading Loan Application...")
-sample_path = project_root / "testing_langfuse" / "loan-evaluator" / "sample_data" / "loan_application_1.json"
+sample_path = project_root / "loan_evaluator" / "sample_data" / "loan_application_1.json"
 
 with open(sample_path) as f:
     app_data = json.load(f)
@@ -273,10 +273,10 @@ print("✅ DEMONSTRATION COMPLETE")
 print("=" * 70)
 print(f"""
 Next Steps:
-1. Install Strands: pip install strands
+1. Install dependencies: pip install -r requirements.txt
 2. Configure AWS credentials: aws configure
-3. Run notebook: jupyter notebook testing_langfuse/loan-evaluator/evaluator_v1.ipynb
-4. Or run Python: python testing_langfuse/loan-evaluator/loan_evaluator.py
+3. Run notebook: jupyter notebook loan_evaluator/evaluator_v1.ipynb
+4. Or run Python: python loan_evaluator/loan_evaluator.py
 
 For more information, see: README.md
 """)
