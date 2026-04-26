@@ -134,7 +134,7 @@ Prompts
 
 ## Configuration
 
-Model: AWS Bedrock - Claude 3.5 Sonnet (specified in code)
+Model: AWS Bedrock - Claude 3.5 Sonnet v2 through the US inference profile
 Default Region: us-east-1
 LangSmith: Disabled by default (can be enabled)
 

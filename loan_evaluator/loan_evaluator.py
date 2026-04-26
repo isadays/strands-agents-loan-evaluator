@@ -18,6 +18,16 @@ from datetime import datetime
 from strands import Agent
 from strands.models import BedrockModel
 
+DEFAULT_BEDROCK_MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+
+BEDROCK_MODEL_ALIASES = {
+    # Anthropic API names are not valid Bedrock model identifiers.
+    "claude-3-5-sonnet-20241022": DEFAULT_BEDROCK_MODEL_ID,
+    "anthropic.claude-3-5-sonnet-20241022": DEFAULT_BEDROCK_MODEL_ID,
+    # Claude 3.5 Sonnet v2 is commonly invoked through the US inference profile.
+    "anthropic.claude-3-5-sonnet-20241022-v2:0": DEFAULT_BEDROCK_MODEL_ID,
+}
+
 try:
     from .models import (
         LoanApplication,
@@ -43,7 +53,7 @@ class LoanEvaluator:
 
     def __init__(
         self,
-        model_name: str = "anthropic.claude-3-5-sonnet-20241022",
+        model_name: str = DEFAULT_BEDROCK_MODEL_ID,
         region: str = "us-east-1",
         use_langsmith: bool = False,
         use_langfuse: Optional[bool] = None,
@@ -57,8 +67,9 @@ class LoanEvaluator:
             use_langsmith: Enable LangSmith tracing
             use_langfuse: Deprecated alias for use_langsmith
         """
+        model_id = self._normalize_bedrock_model_id(model_name)
         self.model = BedrockModel(
-            model_id=model_name,
+            model_id=model_id,
             region_name=region,
         )
         if use_langfuse is not None:
@@ -69,6 +80,11 @@ class LoanEvaluator:
 
         self.prompts = self._load_prompts()
         self.evaluators = self._initialize_agents()
+
+    @staticmethod
+    def _normalize_bedrock_model_id(model_name: str) -> str:
+        """Convert common Claude API model names to Bedrock model/profile IDs."""
+        return BEDROCK_MODEL_ALIASES.get(model_name, model_name)
 
     def _load_prompts(self) -> Dict[str, str]:
         """Load prompt templates for each agent."""

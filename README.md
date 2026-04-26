@@ -116,7 +116,7 @@ for review in result.reviews:
 ## Configuration
 
 Edit the `LoanEvaluator` class initialization to customize:
-- LLM model (default: Claude 3.5 Sonnet via Bedrock)
+- LLM model (default: Claude 3.5 Sonnet v2 via the US Bedrock inference profile)
 - AWS region
 - LangSmith logging preferences
 
@@ -186,6 +186,9 @@ export LANGSMITH_ENDPOINT=https://api.smith.langchain.com
 export LANGSMITH_API_KEY=<your-langsmith-api-key>
 export LANGSMITH_PROJECT="strands-agents-loan"
 ```
+
+The default Bedrock model id is `us.anthropic.claude-3-5-sonnet-20241022-v2:0`.
+This is the US inference profile id, which is valid from `us-east-1`.
 
 ## Testing
 
