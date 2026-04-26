@@ -177,9 +177,18 @@ try:
 
     rationale_summary = rationale_trace_summary([review])
     assert rationale_summary["rationale_redacted"] is True
+    assert "review_reasoning" not in rationale_summary
     assert rationale_summary["agent_count"] == 1
     assert rationale_summary["actions"][review.recommended_action] == 1
     assert rationale_summary["review_signals"][0]["strength_count"] == 2
+
+    rationale_with_text = rationale_trace_summary(
+        [review],
+        include_reasoning_text=True,
+    )
+    assert rationale_with_text["rationale_redacted"] is False
+    assert rationale_with_text["review_reasoning"][0]["strengths"] == review.strengths
+    assert rationale_with_text["review_reasoning"][0]["risks"] == review.risks
 
     assert StateGraph is not None
     print("✅ Trace payloads are redacted and LangGraph is available")

@@ -213,6 +213,18 @@ and rationale text are not sent as custom trace payloads. The
 including action counts, score range, confidence average, and counts of
 strengths/weaknesses/risks, while keeping free-form rationale text local.
 
+To include agent reasoning text in the `decision_rationale` trace node, opt in:
+
+```python
+evaluator = LoanEvaluator(
+    use_langsmith=True,
+    include_reasoning_in_traces=True,
+)
+```
+
+This sends each agent's strengths, weaknesses, risks, conditions, required
+documents, and overall rationale to LangSmith.
+
 ## Testing
 
 Run the test suite to verify all components:

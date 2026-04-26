@@ -64,6 +64,7 @@ class LoanEvaluator:
         model_name: str = DEFAULT_BEDROCK_MODEL_ID,
         region: str = "us-east-1",
         use_langsmith: bool = False,
+        include_reasoning_in_traces: bool = False,
         use_langfuse: Optional[bool] = None,
     ):
         """
@@ -73,6 +74,7 @@ class LoanEvaluator:
             model_name: AWS Bedrock model ID
             region: AWS region
             use_langsmith: Enable LangSmith tracing
+            include_reasoning_in_traces: Include review text in LangSmith traces
             use_langfuse: Deprecated alias for use_langsmith
         """
         model_id = self._normalize_bedrock_model_id(model_name)
@@ -84,6 +86,7 @@ class LoanEvaluator:
             use_langsmith = use_langfuse
 
         self.use_langsmith = use_langsmith
+        self.include_reasoning_in_traces = include_reasoning_in_traces
         self.langsmith_project = os.getenv("LANGSMITH_PROJECT", "strands-agents-loan")
         self.langsmith_client = None
         if self.use_langsmith:
